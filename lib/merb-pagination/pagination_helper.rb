@@ -1,6 +1,82 @@
 require 'builder'
 module Merb
   module PaginationHelper
+    # paginate + some route parameters to generate more complex routes that
+    # let me avoid loathsome querystrings ;)
+    def paginate_with_route(current_page, page_count, route_name, params_for_route = {}, options = {})
+      options.reverse_merge!({
+        :class           => 'paginated',
+        :prev_label      => '&laquo; Previous ',
+        :next_label      => ' Next &raquo;',
+        :left_cut_label  => '&larr;',
+        :right_cut_label => '&rarr;',
+        :outer_window    => 2,
+        :inner_window    => 10,
+        :default_css     => true,
+        :page_param      => 'page'
+      })
+
+      pages = { 
+        :all => (1 .. page_count).to_a, 
+        :left => [], 
+        :center => [], 
+        :right => [] 
+      }
+      
+      # Only worry about using our 'windows' if the page count is less then 
+      # our windows combined.
+      if options[:inner_window].nil? or ((options[:outer_window] *2) + options[:inner_window] + 2) >= page_count
+        pages[:center] = pages[:all]
+      else
+        pages[:left] = pages[:all][0, options[:outer_window]]
+        pages[:right] = pages[:all][page_count - options[:outer_window], options[:outer_window]]
+        pages[:center] = case current_page
+        # allow the inner 'window' to shift to right when close to the left edge
+        # Ex: 1 2 [3] 4 5 6 7 8 9 ... 20
+        when -infinity .. (options[:inner_window] / 2) +3
+          pages[:all][options[:outer_window], options[:inner_window]] + 
+            [options[:right_cut_label]]
+        # allow the inner 'window' to shift left when close to the right edge
+        # Ex: 1 2 ... 12 13 14 15 16 [17] 18 19 20
+        when (page_count - (options[:inner_window] / 2.0).ceil) -1 .. infinity
+          [options[:left_cut_label]] +
+            pages[:all][page_count - options[:inner_window] - options[:outer_window], options[:inner_window]]
+        # Display the unshifed window
+        # ex: 1 2 ... 5 6 7 [8] 9 10 11 ... 19 20
+        else
+          [options[:left_cut_label]] + 
+            pages[:all][current_page - (options[:inner_window] / 2) -1, options[:inner_window]] +
+            [options[:right_cut_label]]
+        end
+      end
+      
+      Builder::XmlMarkup.new.div(:class => options[:class]) do |b|
+        b.style {|s| s << %Q{
+          div.#{options[:class]} ul, div.#{options[:class]} ul li {
+            display: inline;
+            padding: 2px;
+          }  
+        } } if options[:default_css]
+        b << (current_page <= 1 ? options[:prev_label] : link_to(options[:prev_label],url(route_name, params_for_route.merge(:page => current_page - 1))) )
+        
+        b.ul do
+          [pages[:left], pages[:center], pages[:right]].each do |p|
+            p.each do |page_number|
+              case page_number
+              when String
+                b.li(:class=>'more_marker') {|li| li << page_number}
+              when current_page
+                b.li(page_number, :class=>'current_page')
+              else
+                b.li { b.a(page_number, :href=> url(route_name, params_for_route.merge(:page => page_number))  ) }
+              end
+            end
+          end
+        end
+        b << (current_page >= page_count ? options[:next_label] : link_to(options[:next_label],url(route_name, params_for_route.merge(:page => current_page + 1))) )
+      end
+    end
+    
     # Given a page count and the current page, we generate a set of pagination
     # links.
     # 
