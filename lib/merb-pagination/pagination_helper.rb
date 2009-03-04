@@ -57,7 +57,7 @@ module Merb
             padding: 2px;
           }  
         } } if options[:default_css]
-        b << (current_page <= 1 ? options[:prev_label] : link_to(options[:prev_label],url(route_name, params_for_route.merge(:page => current_page - 1))) )
+        b << (current_page <= 1 ? options[:prev_label] : link_to(options[:prev_label],iframe_url_for(route_name, params_for_route.merge(:page => current_page - 1))) )
         
         b.ul do
           [pages[:left], pages[:center], pages[:right]].each do |p|
@@ -68,12 +68,12 @@ module Merb
               when current_page
                 b.li(page_number, :class=>'current_page')
               else
-                b.li { b.a(page_number, :href=> url(route_name, params_for_route.merge(:page => page_number))  ) }
+                b.li { b.a(page_number, :href=> iframe_url_for(route_name, params_for_route.merge(:page => page_number))  ) }
               end
             end
           end
         end
-        b << (current_page >= page_count ? options[:next_label] : link_to(options[:next_label],url(route_name, params_for_route.merge(:page => current_page + 1))) )
+        b << (current_page >= page_count ? options[:next_label] : link_to(options[:next_label],iframe_url_for(route_name, params_for_route.merge(:page => current_page + 1))) )
       end
     end
     

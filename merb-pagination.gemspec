@@ -1,6 +1,6 @@
 Gem::Specification.new do |s|
   s.name     = %q{merb-pagination}
-  s.version  = "0.0.1"
+  s.version  = "0.0.2"
   s.date     = %q{2008-12-10}
   s.summary  = %q{A pagination helper for merb. Useful with dm-is-paginated}
   s.email    = "hedley.robertson@gmail.com"
